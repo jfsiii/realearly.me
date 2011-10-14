@@ -20,7 +20,7 @@ body {
     position: relative;
     text-align: left;
     width: 960px;
-    height: 720px;
+    height: 420px;
     margin: 0;
     clear: left;
 }
@@ -62,7 +62,8 @@ a:hover {color: #c32427; text-decoration: none;}
     border: 2px solid #ccc;
     border-radius: 0 4px 4px 0;
     background-color: white;
-    background-image: ../img/flag.png
+    background-image: ../img/flag.png;
+    left: -9999px;
 }
 
 .flag p {
@@ -118,4 +119,5 @@ button[type="submit"]{
     width: 2px;
     position: absolute;
     top: 239px;
+    left: -9999px;
 }
