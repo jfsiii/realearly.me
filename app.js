@@ -21,7 +21,7 @@ http.createServer(function(request, response) {
 
     var query = getQueryStringArgs(parsed.query);
     var args = query || {};
-    args.foo = 'FOO'; args.bar = 'bAr'; args.baz = 'BAZ';
+
     serveStatic(id, query, request, response);
 
 }).listen(parseInt(port, 10));
