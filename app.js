@@ -1,4 +1,3 @@
-
 /**
  * Module dependencies.
  */
@@ -10,7 +9,6 @@ var http = require('http');
 var url = require('url');
 
 // Configuration
-
 
 app.configure(function(){
     var RedisStore = require('connect-redis')(express);
@@ -52,13 +50,22 @@ app.get('/', function(req, res){
     var query = getQueryStringArgs(parsed.query) || {};
     var args = query;
     if (query.screen_name){
-        if (req.session.screen_names[query.screen_name]){
-            res.render('index.html', req.session.screen_names[query.screen_name]);
+        var key = query.screen_name.toLowerCase();
+        var twitter = req.session.screen_names[key];
+        if (twitter){
+            args = twitter;
+            args.user_id = twitter.id;
+            args.score = getScore(args.user_id)
+            args.flag_position = getFlagPosition(args.created_at);
+            res.render('index.html', args);
         }
         else {
             getTwitterInfo(query.screen_name, function(twitter){
-                req.session.screen_names[query.screen_name] = twitter;
+                req.session.screen_names[query.screen_name.toLowerCase()] = twitter;
                 var args = twitter || {};
+                args.user_id = twitter.id;
+                args.score = getScore(args.user_id)
+                args.flag_position = getFlagPosition(args.created_at);
                 res.render('index.html', args);
             });
         }
@@ -87,7 +94,7 @@ function getQueryStringArgs(query)
 
 function getTwitterInfo(screen_name, cb)
 {
-    console.log('info for', screen_name)
+    console.log('hit twitter for', screen_name)
     var options = {
         host: 'twitter.com',
         path: '/users/show.json?screen_name=' + screen_name
@@ -112,4 +119,26 @@ function getTwitterInfo(screen_name, cb)
         .on('error', function(e) {
             console.log("Got error: " + e.message);
         })
+}
+
+function getScore(user_id)
+{
+    var your_place = parseInt(user_id, 10);
+    var total_users = 400000000;
+    var score = 100 * (1 - ( your_place / total_users ));
+
+    return parseInt(score, 10);
+}
+
+function getFlagPosition(created_date)
+{
+    var twitter_start = new Date('3/1/06');
+    var diff = new Date(created_date) - twitter_start;
+    var chart_left = 86;
+    var chart_width = 960 - chart_left;
+    var total_days = (new Date() - twitter_start) / (1000 * 60 * 60 * 24);
+    var per_day = chart_width / total_days;
+    var days = diff / (1000 * 60 * 60 * 24)
+
+    return (days * per_day) + chart_left;
 }
