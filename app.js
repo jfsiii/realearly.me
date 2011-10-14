@@ -6,31 +6,35 @@ var http = require('http'),
     port = process.argv[2] || 32372;
 
 http.createServer(function(request, response) {
-    var parsed = url.parse(request.url), id;
+    var parsed = url.parse(request.url), filename;
     //console.log('URL: ', request.url, parsed);
 
     if (request.url === '/') {
-        id = 'front-page';
-    }
-    else if (request.url === '/favicon.ico') {
-        id = null;
+        filename = getViewPathname('index');
     }
     else {
-        id = 'unknown-page';
+        filename = getStaticPathname(parsed.pathname);
     }
 
     var query = getQueryStringArgs(parsed.query);
     var args = query || {};
 
-    serveStatic(id, query, request, response);
+    serveStatic(filename, query, request, response);
 
 }).listen(parseInt(port, 10));
 
-function serveStatic(id, args, request, response)
+function getStaticPathname(pathname)
 {
-    var ext = '.html';
-    var pathname = path.join(process.cwd(), 'views', id + ext);
+    return path.join(process.cwd(), pathname);
+}
 
+function getViewPathname(id)
+{
+    return path.join(process.cwd(), 'views', id + '.html');
+}
+
+function serveStatic(pathname, args, request, response)
+{
     path.exists(pathname, function (exists) {
         if (!exists) {
             response.writeHead(404, {'Content-Type': 'text/plain'});
