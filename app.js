@@ -84,12 +84,12 @@ function getQueryStringArgs(query)
     return obj;
 }
 
-function renderTwitter(res, twitter){
-    var args = {
-        user_id: twitter.id,
-        score: getScore(twitter.id),
-        flag_position: getFlagPosition(twitter.created_at)
-    };
+function renderTwitter(res, twitter)
+{
+    var args = twitter;
+    args.user_id = args.id;
+    args.score = getScore(args.id);
+    args.flag_position = getFlagPosition(args.created_at);
     res.render('index.html', args);
 }
 
