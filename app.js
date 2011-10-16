@@ -46,32 +46,24 @@ app.configure('production', function(){
 
 app.get('/', function(req, res){
     if (! req.session.screen_names) req.session.screen_names = {};
+    var cache = req.session.screen_names;
     var parsed = url.parse(req.url);
     var query = getQueryStringArgs(parsed.query) || {};
-    var args = query;
-    if (query.screen_name){
-        var key = query.screen_name.toLowerCase();
-        var twitter = req.session.screen_names[key];
-        if (twitter){
-            args = twitter;
-            args.user_id = twitter.id;
-            args.score = getScore(args.user_id)
-            args.flag_position = getFlagPosition(args.created_at);
-            res.render('index.html', args);
+    var screen_name = query.screen_name;
+    if (screen_name){
+        var key = screen_name.toLowerCase();
+        var twitter = cache[key];
+        if (twitter) {
+            renderTwitter(res, twitter);
         }
         else {
-            getTwitterInfo(query.screen_name, function(twitter){
-                req.session.screen_names[query.screen_name.toLowerCase()] = twitter;
-                var args = twitter || {};
-                args.user_id = twitter.id;
-                args.score = getScore(args.user_id)
-                args.flag_position = getFlagPosition(args.created_at);
-                res.render('index.html', args);
+            getTwitterInfo(screen_name, function (twitter){
+                renderTwitter(res, cache[key] = twitter);
             });
         }
     }
     else {
-        res.render('index.html', args);
+        res.render('index.html', query);
     }
 
 });
@@ -90,6 +82,15 @@ function getQueryStringArgs(query)
     }
 
     return obj;
+}
+
+function renderTwitter(res, twitter){
+    var args = {
+        user_id: twitter.id,
+        score: getScore(twitter.id),
+        flag_position: getFlagPosition(twitter.created_at)
+    };
+    res.render('index.html', args);
 }
 
 function getTwitterInfo(screen_name, cb)
