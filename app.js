@@ -10,7 +10,7 @@ var url = require('url');
 
 // Configuration
 
-app.configure(function(){
+app.configure(function () {
     var RedisStore = require('connect-redis')(express);
     app.set('views', __dirname + '/views');
     app.set('view engine', 'jade');
@@ -24,9 +24,9 @@ app.configure(function(){
     app.set("view options", {layout: false});
     // make a custom html template
     app.register('.html', {
-        compile: function(str, options){
+        compile: function (str, options) {
             return function(locals){
-                return str.replace(/<\!--%\s*(\w+)\s*%-->/g, function(tag, key, index, full){
+                return str.replace(/<\!--%\s*(\w+)\s*%-->/g, function (tag, key, index, full) {
                     return locals[key] || '';
                 });
             };
@@ -34,17 +34,17 @@ app.configure(function(){
     });
 });
 
-app.configure('development', function(){
+app.configure('development', function () {
     app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 });
 
-app.configure('production', function(){
+app.configure('production', function () {
     app.use(express.errorHandler());
 });
 
 // Routes
 
-app.get('/', function(req, res){
+app.get('/', function (req, res) {
     if (! req.session.screen_names) req.session.screen_names = {};
     var cache = req.session.screen_names;
     var parsed = url.parse(req.url);
@@ -57,7 +57,7 @@ app.get('/', function(req, res){
             renderTwitter(res, twitter);
         }
         else {
-            getTwitterInfo(screen_name, function (twitter){
+            getTwitterInfo(screen_name, function (twitter) {
                 renderTwitter(res, cache[key] = twitter);
             });
         }
