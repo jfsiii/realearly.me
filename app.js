@@ -123,17 +123,18 @@ function getScore(user_id)
     return parseInt(score, 10);
 }
 
-function getFlagPosition(created_date)
+function getFlagPosition(account_created)
 {
-    var twitter_start = new Date('3/1/06');
-    var diff = new Date(created_date) - twitter_start;
-    var chart_left = 86;
-    var chart_width = 960 - chart_left;
-    var total_days = (new Date() - twitter_start) / (1000 * 60 * 60 * 24);
+    const DAYS_MS = (1000 * 60 * 60 * 24);
+    var twitter_started = new Date('3/1/06');
+    var diff_ms = new Date(account_created) - twitter_started;
+    var left_margin = 86;
+    var chart_width = 960 - left_margin;
+    var total_days = (new Date() - twitter_started) / DAYS_MS;
     var per_day = chart_width / total_days;
-    var days = diff / (1000 * 60 * 60 * 24)
+    var days = diff_ms / DAYS_MS;
 
-    return (days * per_day) + chart_left;
+    return (days * per_day) + left_margin;
 }
 
 function Cache(name)
