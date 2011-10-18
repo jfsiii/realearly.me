@@ -47,7 +47,7 @@ app.get('/', function (req, res) {
     var parsed = url.parse(req.url);
     var query = getQueryStringArgs(parsed.query) || {};
     var screen_name = query.screen_name;
-    if (screen_name){
+    if (screen_name) {
         getTwitterInfo(screen_name, function (err, twitter) {
             // TODO: give *some* indication to user about the issue
             if (err) console.log("Got error: " + e.message);
@@ -57,7 +57,6 @@ app.get('/', function (req, res) {
     else {
         res.render('index.html', query);
     }
-
 });
 
 app.listen(3000);
@@ -66,7 +65,7 @@ console.log("Express server listening on port %d in %s mode", app.address().port
 function getQueryStringArgs(query)
 {
     var obj = {};
-    if (query){
+    if (query) {
         query.split('&').forEach(function (pair) {
             var arr = pair.split('=');
             obj[arr[0]] = arr[1];
@@ -102,7 +101,7 @@ function getTwitterInfo(screen_name, cb)
                     try {
                         twitter = JSON.parse(json);
                     }
-                    catch (ex){}
+                    catch (ex) {}
                     var args = twitter;
                     args.user_id = args.id;
                     args.score = getScore(args.id);
@@ -152,6 +151,5 @@ Cache.prototype.get = function (key) {
 }
 
 Cache.prototype.set = function (key, value) {
-
     return this._store[ this.key(key) ] = value;
 }
