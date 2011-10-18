@@ -11,21 +11,20 @@ var url = require('url');
 // Configuration
 
 app.configure(function () {
-    var RedisStore = require('connect-redis')(express);
     app.set('views', __dirname + '/views');
     app.set('view engine', 'jade');
     app.use(express.bodyParser());
     app.use(express.cookieParser());
-    app.use(express.session({ secret: "realearly.me is real late", store: new RedisStore }));
     app.use(express.methodOverride());
     app.use(app.router);
     app.use(express.static(__dirname + '/public'));
-    // disable layout
+
+    app.cache = {screen_names: new Cache('screen_names')};
+
     app.set("view options", {layout: false});
-    // make a custom html template
     app.register('.html', {
         compile: function (str, options) {
-            return function(locals){
+            return function (locals) {
                 return str.replace(/<\!--%\s*(\w+)\s*%-->/g, function (tag, key, index, full) {
                     return locals[key] || '';
                 });
@@ -45,22 +44,15 @@ app.configure('production', function () {
 // Routes
 
 app.get('/', function (req, res) {
-    if (! req.session.screen_names) req.session.screen_names = {};
-    var cache = req.session.screen_names;
     var parsed = url.parse(req.url);
     var query = getQueryStringArgs(parsed.query) || {};
     var screen_name = query.screen_name;
     if (screen_name){
-        var key = screen_name.toLowerCase();
-        var twitter = cache[key];
-        if (twitter) {
-            renderTwitter(res, twitter);
-        }
-        else {
-            getTwitterInfo(screen_name, function (twitter) {
-                renderTwitter(res, cache[key] = twitter);
-            });
-        }
+        getTwitterInfo(screen_name, function (err, twitter) {
+            // TODO: give *some* indication to user about the issue
+            if (err) console.log("Got error: " + e.message);
+            res.render('index.html', twitter);
+        });
     }
     else {
         res.render('index.html', query);
@@ -84,42 +76,43 @@ function getQueryStringArgs(query)
     return obj;
 }
 
-function renderTwitter(res, twitter)
-{
-    var args = twitter;
-    args.user_id = args.id;
-    args.score = getScore(args.id);
-    args.flag_position = getFlagPosition(args.created_at);
-    res.render('index.html', args);
-}
-
 function getTwitterInfo(screen_name, cb)
 {
-    console.log('hit twitter for', screen_name)
-    var options = {
-        host: 'twitter.com',
-        path: '/users/show.json?screen_name=' + screen_name
+    var cache = app.cache.screen_names;
+    var twitter = cache.get(screen_name);
+    if (twitter) {
+        cb(null, twitter);
     }
-    var calls_left;
+    else {
+        console.log('hit twitter for', screen_name)
+        var options = {
+            host: 'twitter.com',
+            path: '/users/show.json?screen_name=' + screen_name
+        }
+        var calls_left;
 
-    http
-        .get(options, function (response) {
-            calls_left = parseInt(response.headers['x-ratelimit-remaining'], 10);
-            console.log(calls_left, 'calls left');
-            var json = '';
-            response.on('data', function (data) { json += data });
-            response.on('end', function () {
-                var twitter;
-                try {
-                    twitter = JSON.parse(json);
-                }
-                catch (ex){}
-                cb(twitter)
+        http
+            .get(options, function (response) {
+                calls_left = parseInt(response.headers['x-ratelimit-remaining'], 10);
+                console.log(calls_left, 'calls left');
+                var json = '';
+                response.on('data', function (data) { json += data });
+                response.on('end', function () {
+                    var twitter;
+                    try {
+                        twitter = JSON.parse(json);
+                    }
+                    catch (ex){}
+                    var args = twitter;
+                    args.user_id = args.id;
+                    args.score = getScore(args.id);
+                    args.flag_position = getFlagPosition(args.created_at);
+                    app.cache.screen_names.set(screen_name, args)
+                    cb(null, args)
+                })
             })
-        })
-        .on('error', function(e) {
-            console.log("Got error: " + e.message);
-        })
+            .on('error', function (err) { cb(err) })
+    }
 }
 
 function getScore(user_id)
@@ -142,4 +135,23 @@ function getFlagPosition(created_date)
     var days = diff / (1000 * 60 * 60 * 24)
 
     return (days * per_day) + chart_left;
+}
+
+function Cache(name)
+{
+    var RedisStore = require('connect-redis')(express);
+    this._store = {};
+}
+
+Cache.prototype.key = function (str) {
+    return str.toLowerCase();
+}
+
+Cache.prototype.get = function (key) {
+    return this._store[ this.key(key) ];
+}
+
+Cache.prototype.set = function (key, value) {
+
+    return this._store[ this.key(key) ] = value;
 }
